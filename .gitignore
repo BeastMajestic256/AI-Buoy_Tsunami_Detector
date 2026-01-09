@@ -1,0 +1,14 @@
+# Arduino build files
+*.hex
+*.elf
+*.bin
+
+# Arduino IDE cache
+.build/
+.cache/
+arduino_build_*
+arduino_cache_*
+
+# OS files
+.DS_Store
+Thumbs.db
