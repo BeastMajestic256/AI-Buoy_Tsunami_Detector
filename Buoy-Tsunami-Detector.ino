@@ -14,42 +14,34 @@ CAHS
 */
 
 
-#include <HX710.h>
+#include <SoftwareSerial.h>
 
-#define HX710_DOUT 2
-#define HX710_SCK  3
-
-HX710 pressure;
+// Arduino RX, Arduino TX
+SoftwareSerial sim800(10, 11);
 
 void setup() {
-  Serial.begin(19200);
+  Serial.begin(9600);
+  sim800.begin(9600);
 
-  Serial.println("HX710B Pressure Sensor Test");
+  Serial.println("SIM800L Test");
+  Serial.println("----------------");
+  Serial.println("Type AT commands into Serial Monitor.");
+  Serial.println();
 
-  // Initialize HX710B
-  pressure.initialize(HX710_SCK, HX710_DOUT);
+  delay(3000);
 
-  Serial.println("HX710B initialized.");
+  sim800.println("AT");
 }
 
 void loop() {
 
-  if (pressure.isReady()) {
-
-    int32_t differential = pressure.getLastDifferentialInput();
-    int32_t other = pressure.getLastOtherInput();
-
-    Serial.print("Differential: ");
-    Serial.print(differential);
-
-    Serial.print(" | Other: ");
-    Serial.println(other);
-
-  } else {
-
-    Serial.println("HX710B not ready.");
-
+  // Computer -> SIM800L
+  if (Serial.available()) {
+    sim800.write(Serial.read());
   }
 
-  delay(500);
+  // SIM800L -> Computer
+  if (sim800.available()) {
+    Serial.write(sim800.read());
+  }
 }
