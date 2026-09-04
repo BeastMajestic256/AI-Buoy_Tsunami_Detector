@@ -1,47 +1,60 @@
-/*
-Buoy-Tsunami-Detector.ino
-
-Programmed by John Nhelmer S. Nuguid
-
-with
-
-Sean Andrei DJ. Delima
-Chris Laurence Lacsamana
-
-Organizations from
-9 - Einstein
-CAHS
-*/
-
-
-#include <SoftwareSerial.h>
-
-// Arduino RX, Arduino TX
-SoftwareSerial sim800(10, 11);
+#define HX_DOUT 3
+#define HX_SCK  4
 
 void setup() {
-  Serial.begin(9600);
-  sim800.begin(9600);
+  Serial.begin(115200);
+  delay(1000);
+  
+  pinMode(HX_DOUT, INPUT);
+  pinMode(HX_SCK, OUTPUT);
+  digitalWrite(HX_SCK, LOW);
+  
+  Serial.println("HX710B Test Starting...");
+  Serial.println("If you see changing numbers → sensor is working");
+  Serial.println("If you only see 0 → check wiring or power");
+}
 
-  Serial.println("SIM800L Test");
-  Serial.println("----------------");
-  Serial.println("Type AT commands into Serial Monitor.");
-  Serial.println();
+long readHX710B() {
+  // Wait for ready (DOUT goes LOW)
+  unsigned long timeout = millis();
+  while (digitalRead(HX_DOUT) == HIGH) {
+    if (millis() - timeout > 300) {
+      return 0;   // timeout
+    }
+  }
 
-  delay(3000);
+  unsigned long value = 0;
 
-  sim800.println("AT");
+  // Read 24 bits
+  for (int i = 0; i < 24; i++) {
+    digitalWrite(HX_SCK, HIGH);
+    delayMicroseconds(1);
+    value = value << 1;
+    digitalWrite(HX_SCK, LOW);
+    delayMicroseconds(1);
+    if (digitalRead(HX_DOUT)) {
+      value++;
+    }
+  }
+
+  // One extra pulse (channel A, gain 128)
+  digitalWrite(HX_SCK, HIGH);
+  delayMicroseconds(1);
+  digitalWrite(HX_SCK, LOW);
+
+  // Convert 24-bit two's complement
+  if (value & 0x800000UL) {
+    value |= 0xFF000000UL;
+  }
+
+  return (long)value;
 }
 
 void loop() {
-
-  // Computer -> SIM800L
-  if (Serial.available()) {
-    sim800.write(Serial.read());
-  }
-
-  // SIM800L -> Computer
-  if (sim800.available()) {
-    Serial.write(sim800.read());
-  }
+  long raw = readHX710B();
+  
+  Serial.print("Raw pressure value: ");
+  Serial.println(raw);
+  
+  delay(500);
 }
